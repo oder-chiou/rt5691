@@ -35,7 +35,7 @@ struct rt5691_platform_data {
 	bool in2_diff;
 	bool in3_diff;
 
-	int ldo1_en;
+	int ldo1_en, gpio_1v8, gpio_3v3;
 
 	enum rt5691_jd_src jd_src;
 	enum rt5691_gpio2_func gpio2_func;

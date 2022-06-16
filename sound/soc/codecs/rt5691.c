@@ -3016,6 +3016,10 @@ static int rt5691_parse_dt(struct rt5691_priv *rt5691, struct device *dev)
 
 	rt5691->pdata.ldo1_en = of_get_named_gpio(dev->of_node,
 		"realtek,ldo1_en", 0);
+	rt5691->pdata.gpio_1v8= of_get_named_gpio(dev->of_node,
+		"realtek,gpio_1v8", 0);
+	rt5691->pdata.gpio_3v3 = of_get_named_gpio(dev->of_node,
+		"realtek,gpio_3v3", 0);
 
 	of_property_read_u32(dev->of_node, "realtek,gpio2-func",
 		&rt5691->pdata.gpio2_func);
@@ -3023,7 +3027,6 @@ static int rt5691_parse_dt(struct rt5691_priv *rt5691, struct device *dev)
 		&rt5691->pdata.gpio3_func);
 	of_property_read_u32(dev->of_node, "realtek,jd-src",
 		&rt5691->pdata.jd_src);
-
 
 	of_property_read_u32(dev->of_node, "realtek,delay-plug-in",
 		&rt5691->pdata.delay_plug_in);
@@ -3884,6 +3887,7 @@ static int rt5691_i2c_probe(struct i2c_client *i2c,
 {
 	struct rt5691_platform_data *pdata = dev_get_platdata(&i2c->dev);
 	struct rt5691_priv *rt5691;
+	struct regulator *regulator_1v8, *regulator_3v3;
 	int ret;
 	unsigned int val;
 
@@ -3899,6 +3903,34 @@ static int rt5691_i2c_probe(struct i2c_client *i2c,
 		rt5691->pdata = *pdata;
 	else
 		rt5691_parse_dt(rt5691, &i2c->dev);
+
+	regulator_1v8 = devm_regulator_get(&i2c->dev, "regulator_1v8");
+	if (IS_ERR(regulator_1v8))
+		dev_err(&i2c->dev, "Fail to get regulator_1v8\n");
+	else if (regulator_enable(regulator_1v8))
+		dev_err(&i2c->dev, "Fail to enable regulator_1v8\n");
+
+	regulator_3v3 = devm_regulator_get(&i2c->dev, "regulator_3v3");
+	if (IS_ERR(regulator_3v3))
+		dev_err(&i2c->dev, "Fail to get regulator_3v3\n");
+	else if (regulator_enable(regulator_3v3))
+		dev_err(&i2c->dev, "Fail to enable regulator_3v3\n");
+
+	if (gpio_is_valid(rt5691->pdata.gpio_1v8)) {
+		if (devm_gpio_request(&i2c->dev, rt5691->pdata.gpio_1v8,
+			"rt5691"))
+			dev_err(&i2c->dev, "Fail gpio_request gpio_1v8\n");
+		else if (gpio_direction_output(rt5691->pdata.gpio_1v8, 1))
+			dev_err(&i2c->dev, "Fail gpio_direction gpio_1v8\n");
+	}
+
+	if (gpio_is_valid(rt5691->pdata.gpio_3v3)) {
+		if (devm_gpio_request(&i2c->dev, rt5691->pdata.gpio_3v3,
+			"rt5691"))
+			dev_err(&i2c->dev, "Fail gpio_request gpio_3v3\n");
+		else if (gpio_direction_output(rt5691->pdata.gpio_3v3, 1))
+			dev_err(&i2c->dev, "Fail gpio_direction gpio_ldo\n");
+	}
 
 	if (gpio_is_valid(rt5691->pdata.ldo1_en)) {
 		if (devm_gpio_request(&i2c->dev, rt5691->pdata.ldo1_en,
