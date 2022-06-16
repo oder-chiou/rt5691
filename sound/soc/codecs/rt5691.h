@@ -670,7 +670,7 @@ struct rt5691_priv {
 	struct rt5691_platform_data pdata;
 	struct regmap *regmap;
 	struct snd_soc_jack *hs_jack;
-	struct delayed_work jack_detect_work, calibrate_work;
+	struct delayed_work jack_detect_work, calibrate_work, mic_check_work;
 	struct delayed_work sto1_l_adc_work, sto1_r_adc_work;
 	struct delayed_work sto2_l_adc_work, sto2_r_adc_work;
 
@@ -696,6 +696,7 @@ struct rt5691_priv {
 	bool open_gender;
 	bool disable_ng2;
 	bool is_suspend;
+	bool mic_check_break;
 	bool rek;
 	unsigned long rek_timeout;
 

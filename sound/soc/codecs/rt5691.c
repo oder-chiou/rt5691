@@ -623,13 +623,15 @@ static struct reg_sequence rt5691_init_list[] = {
 	{RT5691_STO2_ADC_MIXER_CTRL,		0xf0f0},
 	{RT5691_COMBO_JACK_CTRL_4,		0x0104},
 	{RT5691_COMBO_WATER_CTRL_3,		0x0f5f},
-	{RT5691_COMBO_WATER_CTRL_4,		0x001e},
+	{RT5691_COMBO_WATER_CTRL_4,		0x004a},
 	{RT5691_COMBO_WATER_CTRL_5,		0x07c0},
-	{RT5691_COMBO_JACK_CTRL_3,		0x1af2},
+	{RT5691_COMBO_JACK_CTRL_3,		0x1ae2},
 	{RT5691_STO_DRE_CTRL_2, 		0x0041},
 	{RT5691_STO_DRE_CTRL_3, 		0x040c},
 	{RT5691_ADC_FILTER_CTRL_3, 		0x0090},
 	{RT5691_ADC_FILTER2_CTRL_3, 		0x0090},
+	{RT5691_HPOUT_CP_CTRL_1, 		0x5018},
+	{RT5691_GPIO_CLK, 			0x8000},
 };
 
 static bool rt5691_volatile_register(struct device *dev, unsigned int reg)
@@ -1332,7 +1334,7 @@ static void rt5691_noise_gate(struct snd_soc_component *component, bool enable)
 		snd_soc_component_update_bits(component, RT5691_PWR_DA_PATH_1,
 			0x0080, 0x0080);
 		snd_soc_component_update_bits(component, RT5691_SIL_DET_TOP,
-			0x8078, 0x8040);
+			0xf078, 0xa040);
 		snd_soc_component_update_bits(component, RT5691_SIL_DET_CTRL8,
 			0xc000, 0xc000);
 		snd_soc_component_update_bits(component, RT5691_SIL_DET_CTRL9,
@@ -1870,6 +1872,9 @@ static int rt5691_hp_event(struct snd_soc_dapm_widget *w,
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
+		snd_soc_component_update_bits(component, RT5691_HPOUT_CP_CTRL_1,
+			0x0c00, 0x0c00);
+
 		snd_soc_component_update_bits(component, RT5691_HP_AMP_CTRL_2,
 			0x3000, 0x3000);
 
@@ -1895,6 +1900,8 @@ static int rt5691_hp_event(struct snd_soc_dapm_widget *w,
 			RT5691_HP_AMP_DET_CTRL_14, 0x0070, 0x0020);
 		snd_soc_component_update_bits(component,
 			RT5691_HP_AMP_DET_CTRL_18, 0x000c, 0);
+		snd_soc_component_update_bits(component, RT5691_HPOUT_CP_CTRL_1,
+			0x0c00, 0);
 
 		snd_soc_component_update_bits(component, RT5691_PWR_DA_PATH_1,
 			0x0004, 0);
@@ -2041,6 +2048,48 @@ static int rt5691_sto2_r_adc_depop_event(struct snd_soc_dapm_widget *w,
 	return 0;
 }
 
+static int rt5691_bst1_event(struct snd_soc_dapm_widget *w,
+	struct snd_kcontrol *kcontrol, int event)
+{
+	struct snd_soc_component *component =
+		snd_soc_dapm_to_component(w->dapm);
+	struct rt5691_priv *rt5691 = snd_soc_component_get_drvdata(component);
+
+	switch (event) {
+	case SND_SOC_DAPM_PRE_PMU:
+		if (!rt5691->open_gender) {
+			snd_soc_component_update_bits(component,
+				RT5691_COMBO_JACK_CTRL_2, 0x8000, 0);
+			snd_soc_component_update_bits(component,
+				RT5691_MONO_ANLG_DRE_CTRL_2, 0x0600, 0);
+			snd_soc_component_update_bits(component,
+				RT5691_COMBO_JACK_CTRL_3, 0x00f3, 0x00e2);
+			snd_soc_component_update_bits(component,
+				RT5691_COMBO_JACK_CTRL_2, 0x8000, 0x8000);
+		}
+		break;
+
+	case SND_SOC_DAPM_POST_PMD:
+		if (!rt5691->open_gender) {
+			snd_soc_component_update_bits(component,
+				RT5691_COMBO_JACK_CTRL_2, 0x8000, 0);
+			snd_soc_component_update_bits(component,
+				RT5691_MONO_ANLG_DRE_CTRL_2, 0x0600, 0x0600);
+			snd_soc_component_update_bits(component,
+				RT5691_COMBO_JACK_CTRL_3, 0x00f3, 0x00e1);
+			snd_soc_component_update_bits(component,
+				RT5691_COMBO_JACK_CTRL_2, 0x8000, 0x8000);
+		}
+		break;
+
+	default:
+		return 0;
+	}
+
+	return 0;
+
+}
+
 static const struct snd_soc_dapm_widget rt5691_dapm_widgets[] = {
 	SND_SOC_DAPM_SUPPLY("RC 1M", RT5691_RC_CLK, 11, 0, NULL, 0),
 	SND_SOC_DAPM_SUPPLY("RC 25M", RT5691_RC_CLK, 15, 0, NULL, 0),
@@ -2093,8 +2142,9 @@ static const struct snd_soc_dapm_widget rt5691_dapm_widgets[] = {
 	SND_SOC_DAPM_SUPPLY("DMIC Power", RT5691_DMIC_CTRL, 7, 0, NULL, 0),
 
 	/* Boost */
-	SND_SOC_DAPM_PGA("BST1", SND_SOC_NOPM,
-		0, 0, NULL, 0),
+	SND_SOC_DAPM_PGA_E("BST1", SND_SOC_NOPM,
+		0, 0, NULL, 0, rt5691_bst1_event,
+		SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
 	SND_SOC_DAPM_PGA("BST2", SND_SOC_NOPM,
 		0, 0, NULL, 0),
 	SND_SOC_DAPM_PGA("BST3", SND_SOC_NOPM,
@@ -3137,7 +3187,15 @@ static int rt5691_water_detect(struct snd_soc_component *component,
 			RT5691_WATER_DET_CTRL_3) & 0x3) == 0x2) {
 			regmap_update_bits(rt5691->regmap, RT5691_WATER_DET_CTRL_3, 0x8000,
 				0);
-			for (i = ARRAY_SIZE(rt5691_wt_list) - 1; i >= 0; i--)
+
+			snd_soc_component_update_bits(component, RT5691_HP_AMP_CTRL_2,
+				0x3000, 0);
+			snd_soc_component_update_bits(component,
+				RT5691_HP_AMP_DET_CTRL_14, 0x0070, 0x0020);
+			snd_soc_component_update_bits(component,
+				RT5691_HP_AMP_DET_CTRL_18, 0x000c, 0);
+
+			for (i = ARRAY_SIZE(rt5691_wt_list) - 4; i >= 0; i--)
 				snd_soc_component_write(component, rt5691_wt_list[i].reg,
 					rt5691_wt_list_saved[i]);
 
@@ -3151,7 +3209,15 @@ static int rt5691_water_detect(struct snd_soc_component *component,
 			regmap_update_bits(rt5691->regmap, RT5691_IRQ_CTRL_4,
 				0x0008, 0x0008);
 			rt5691->wt_en = true;
-			for (i = ARRAY_SIZE(rt5691_wt_list) - 1; i >= 0; i--) {
+
+			snd_soc_component_update_bits(component, RT5691_HP_AMP_CTRL_2,
+				0x3000, 0);
+			snd_soc_component_update_bits(component,
+				RT5691_HP_AMP_DET_CTRL_14, 0x0070, 0x0020);
+			snd_soc_component_update_bits(component,
+				RT5691_HP_AMP_DET_CTRL_18, 0x000c, 0);
+
+			for (i = ARRAY_SIZE(rt5691_wt_list) - 4; i >= 0; i--) {
 				if (rt5691_wt_list[i].reg == RT5691_PWR_DA_PATH_2)
 					rt5691_wt_list_saved[i] |= 0x1100;
 
@@ -3186,15 +3252,19 @@ static int rt5691_headset_detect(struct snd_soc_component *component, int jack_i
 	unsigned int sar_adc_value, sar_hs_type;
 
 	if (jack_insert) {
-		regmap_update_bits(rt5691->regmap, RT5691_PWR_DA_PATH_2, 0x480, 0x480);
-		regmap_update_bits(rt5691->regmap, RT5691_COMBO_JACK_CTRL_5, 0x7, 0x5);
+		regmap_update_bits(rt5691->regmap, RT5691_WATER_DET_CTRL_2, 0xf0, 0);
+		regmap_update_bits(rt5691->regmap, RT5691_IRQ_CTRL_1, 0x8, 0);
+		regmap_update_bits(rt5691->regmap, RT5691_COMBO_JACK_CTRL_5, 0xc007, 0xc005);
 		regmap_update_bits(rt5691->regmap, RT5691_COMBO_JACK_CTRL_4, 0x600, 0x600);
+		regmap_update_bits(rt5691->regmap, RT5691_PWR_DA_PATH_2, 0x480, 0x480);
 		snd_soc_dapm_force_enable_pin(dapm, "MICBIAS1");
 		snd_soc_dapm_sync(dapm);
 
 		regmap_write(rt5691->regmap, RT5691_SAR_ADC_DET_CTRL_2, 0x2c);
 		regmap_write(rt5691->regmap, RT5691_JACK_TYPE_DET_CTRL_2, 0xfc00);
 		regmap_write(rt5691->regmap, RT5691_SAR_ADC_DET_CTRL_1, 0);
+
+		msleep(20);
 
 		sar_adc_value = snd_soc_component_read(component,
 			RT5691_SAR_ADC_DET_CTRL_23);
@@ -3212,10 +3282,16 @@ static int rt5691_headset_detect(struct snd_soc_component *component, int jack_i
 					RT5691_COMBO_JACK_CTRL_2, 0x8000,
 					0x8000);
 				regmap_update_bits(rt5691->regmap,
-					RT5691_IRQ_CTRL_2, 0x20, 0x20);
+					RT5691_COMBO_JACK_CTRL_3, 0x00f3, 0x00e2);				
+				regmap_update_bits(rt5691->regmap,
+					RT5691_IRQ_CTRL_2, 0x30, 0x20);
 				regmap_write(rt5691->regmap,
 					RT5691_SAR_ADC_DET_CTRL_2, 0x20);
 				rt5691_water_detect(component, false);
+				regmap_update_bits(rt5691->regmap,
+					RT5691_WATER_DET_CTRL_2, 0xf0, 0x90);
+				regmap_update_bits(rt5691->regmap,
+					RT5691_IRQ_CTRL_1, 0x8, 0x8);
 				dev_dbg(component->dev, "jack_type = open gender\n");
 				return rt5691->jack_type;
 			}
@@ -3223,17 +3299,38 @@ static int rt5691_headset_detect(struct snd_soc_component *component, int jack_i
 
 		if (sar_adc_value > sar_hs_type) {
 			rt5691->jack_type = SND_JACK_HEADSET;
+			if (!rt5691->open_gender) {
+				regmap_write(rt5691->regmap, RT5691_INT_ST_1, 0);
+				regmap_update_bits(rt5691->regmap,
+					RT5691_IRQ_CTRL_2, 0x0018, 0x0018);
+				regmap_update_bits(rt5691->regmap,
+					RT5691_COMBO_JACK_CTRL_3, 0x00f3, 0x00e1);
+				regmap_update_bits(rt5691->regmap,
+					RT5691_COMBO_JACK_CTRL_5, 0xc007, 0xc004);
+				regmap_update_bits(rt5691->regmap,
+					RT5691_MONO_ANLG_DRE_CTRL_2, 0x0600, 0x0600);
+				regmap_update_bits(rt5691->regmap,
+					RT5691_COMBO_JACK_CTRL_4, 0x600, 0x600);
+				regmap_update_bits(rt5691->regmap,
+					RT5691_COMBO_JACK_CTRL_2, 0x8000, 0x8000);
+				regmap_update_bits(rt5691->regmap,
+					RT5691_PWR_DA_PATH_2, 0x400, 0x400);
+			}
 			rt5691_enable_push_button_irq(component, true);
 		} else {
 			rt5691->jack_type = SND_JACK_HEADPHONE;
 			if (!rt5691->open_gender) {
 				regmap_write(rt5691->regmap, RT5691_SAR_ADC_DET_CTRL_2, 0x20);
 				regmap_update_bits(rt5691->regmap, RT5691_COMBO_JACK_CTRL_4, 0x400, 0);
+				regmap_update_bits(rt5691->regmap, RT5691_MONO_ANLG_DRE_CTRL_2, 0x0600, 0);
 				regmap_update_bits(rt5691->regmap, RT5691_PWR_DA_PATH_2, 0x480, 0);
 				snd_soc_dapm_disable_pin(dapm, "MICBIAS1");
 				snd_soc_dapm_sync(dapm);
 			}
 		}
+
+		regmap_update_bits(rt5691->regmap, RT5691_WATER_DET_CTRL_2, 0xf0, 0x90);
+		regmap_update_bits(rt5691->regmap, RT5691_IRQ_CTRL_1, 0x8, 0x8);
 	} else {
 		if (!rt5691->open_gender) {
 			snd_soc_dapm_disable_pin(dapm, "MICBIAS1");
@@ -3241,6 +3338,7 @@ static int rt5691_headset_detect(struct snd_soc_component *component, int jack_i
 
 			regmap_write(rt5691->regmap, RT5691_SAR_ADC_DET_CTRL_2, 0x20);
 			regmap_update_bits(rt5691->regmap, RT5691_COMBO_JACK_CTRL_4, 0x400, 0);
+			regmap_update_bits(rt5691->regmap, RT5691_MONO_ANLG_DRE_CTRL_2, 0x0600, 0);
 			regmap_update_bits(rt5691->regmap, RT5691_PWR_DA_PATH_2, 0x480, 0);
 		}
 
@@ -3358,6 +3456,9 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 		msleep(50);
 	}
 
+	rt5691->mic_check_break = true;
+	cancel_delayed_work_sync(&rt5691->mic_check_work);
+
 	mask = 0x8000;
 
 	regmap_read(rt5691->regmap, RT5691_ANLG_READ_STA_324, &val);
@@ -3422,6 +3523,10 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 #ifdef CONFIG_SWITCH
 				switch_set_state(&rt5691_headset_switch, 2);
 #endif
+				if (!rt5691->open_gender) {
+					schedule_delayed_work( &rt5691->mic_check_work,
+						msecs_to_jiffies(40));
+				}
 			} else {
 #ifdef CONFIG_SWITCH
 				switch_set_state(&rt5691_headset_switch, 0);
@@ -3434,6 +3539,15 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 				/* jack is already in, report button event */
 				rt5691->jack_type = SND_JACK_HEADSET;
 				btn_type = rt5691_button_detect(rt5691->component);
+
+				if (!rt5691->open_gender) {
+					regmap_read(rt5691->regmap, RT5691_INT_ST_1, &val);
+					if (val & 0x0001) {
+						regmap_write(rt5691->regmap, RT5691_INT_ST_1, 0);
+						btn_type = 0;
+						dev_dbg(component->dev, "JD3 trigger\n");
+					}
+				}
 
 				switch (btn_type) {
 				case 0x4000:
@@ -3630,6 +3744,81 @@ static void rt5691_calibrate_handler(struct work_struct *work)
 	}
 
 	rt5691_calibrate(rt5691);
+}
+
+static void rt5691_mic_check_handler(struct work_struct *work)
+{
+	struct rt5691_priv *rt5691 = container_of(work, struct rt5691_priv,
+		mic_check_work.work);
+	struct snd_soc_component *component = rt5691->component;
+	struct snd_soc_dapm_context *dapm = &component->dapm;
+	int sar_adc_value, sar_hs_type, i;
+
+	pm_wakeup_event(component->dev, 3000);
+
+	rt5691->mic_check_break = false;
+
+	regmap_update_bits(rt5691->regmap, RT5691_PWR_DA_PATH_2, 0x80, 0x80);
+	snd_soc_dapm_force_enable_pin(dapm, "MICBIAS1");
+	snd_soc_dapm_sync(dapm);
+	
+	regmap_write(rt5691->regmap, RT5691_SAR_ADC_DET_CTRL_2, 0x2c);
+	regmap_write(rt5691->regmap, RT5691_JACK_TYPE_DET_CTRL_2, 0xfc00);
+	regmap_write(rt5691->regmap, RT5691_SAR_ADC_DET_CTRL_1, 0);
+	
+	sar_hs_type = rt5691->pdata.sar_hs_type ?
+		rt5691->pdata.sar_hs_type : 729;
+
+	for (i = 0; i < 100; i++) {
+		msleep(20);
+
+		if (i % 10 == 0) {
+			sar_adc_value = snd_soc_component_read(component,
+				RT5691_SAR_ADC_DET_CTRL_23);
+
+			pr_debug("%s: sar_adc_value = %d\n", __func__, sar_adc_value);
+		}
+
+		if (rt5691->mic_check_break)
+			break;
+	}
+
+	if (!rt5691->mic_check_break && sar_adc_value > sar_hs_type) {
+		regmap_write(rt5691->regmap, RT5691_INT_ST_1, 0);
+		regmap_update_bits(rt5691->regmap,
+			RT5691_IRQ_CTRL_2, 0x0018, 0x0018);
+		regmap_update_bits(rt5691->regmap,
+			RT5691_COMBO_JACK_CTRL_3, 0x00f3, 0x00e1);
+		regmap_update_bits(rt5691->regmap,
+			RT5691_COMBO_JACK_CTRL_5, 0xc007, 0xc004);
+		regmap_update_bits(rt5691->regmap,
+			RT5691_MONO_ANLG_DRE_CTRL_2, 0x0600, 0x0600);
+		regmap_update_bits(rt5691->regmap,
+			RT5691_COMBO_JACK_CTRL_4, 0x600, 0x600);
+		regmap_update_bits(rt5691->regmap,
+			RT5691_COMBO_JACK_CTRL_2, 0x8000, 0x8000);
+		regmap_update_bits(rt5691->regmap,
+			RT5691_PWR_DA_PATH_2, 0x400, 0x400);
+
+		rt5691->jack_type = SND_JACK_HEADSET;
+		rt5691_enable_push_button_irq(component, true);
+#ifdef CONFIG_SWITCH
+		switch_set_state(&rt5691_headset_switch, 1);
+#endif
+		snd_soc_jack_report(rt5691->hs_jack, rt5691->jack_type,
+			SND_JACK_HEADSET);
+
+		pr_debug("%s: jack_type = 0x%04x\n", __func__,
+			rt5691->jack_type);
+		return;
+	}
+
+	regmap_write(rt5691->regmap, RT5691_SAR_ADC_DET_CTRL_2, 0x20);
+	regmap_update_bits(rt5691->regmap, RT5691_COMBO_JACK_CTRL_4, 0x400, 0);
+	regmap_update_bits(rt5691->regmap, RT5691_MONO_ANLG_DRE_CTRL_2, 0x0600, 0);
+	regmap_update_bits(rt5691->regmap, RT5691_PWR_DA_PATH_2, 0x80, 0);
+	snd_soc_dapm_disable_pin(dapm, "MICBIAS1");
+	snd_soc_dapm_sync(dapm);
 }
 
 static void rt5691_sto1_l_adc_handler(struct work_struct *work)
@@ -4033,6 +4222,7 @@ static int rt5691_i2c_probe(struct i2c_client *i2c,
 	INIT_DELAYED_WORK(&rt5691->sto1_r_adc_work, rt5691_sto1_r_adc_handler);
 	INIT_DELAYED_WORK(&rt5691->sto2_l_adc_work, rt5691_sto2_l_adc_handler);
 	INIT_DELAYED_WORK(&rt5691->sto2_r_adc_work, rt5691_sto2_r_adc_handler);
+	INIT_DELAYED_WORK(&rt5691->mic_check_work, rt5691_mic_check_handler);
 
 	if (i2c->irq)
 		rt5691->irq = i2c->irq;
