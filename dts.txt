@@ -1,5 +1,6 @@
 compatible = "realtek,rt5691";
 reg = <0x1b>;
+realtek,jd-src = <1>;
 realtek,in1-differential;
 realtek,in2-differential;
 realtek,in3-differential;
