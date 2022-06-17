@@ -3077,6 +3077,8 @@ static int rt5691_parse_dt(struct rt5691_priv *rt5691, struct device *dev)
 		&rt5691->pdata.gpio3_func);
 	of_property_read_u32(dev->of_node, "realtek,jd-src",
 		&rt5691->pdata.jd_src);
+	of_property_read_u32(dev->of_node, "realtek,jd-resistor",
+		&rt5691->pdata.jd_resistor);
 
 	of_property_read_u32(dev->of_node, "realtek,delay-plug-in",
 		&rt5691->pdata.delay_plug_in);
@@ -4199,6 +4201,10 @@ static int rt5691_i2c_probe(struct i2c_client *i2c,
 		regmap_write(rt5691->regmap, RT5691_SAR_ADC_DET_CTRL_12,
 			rt5691->pdata.sar_pb_vth3 & 0xff);
 	}
+
+	if (rt5691->pdata.jd_resistor)
+		regmap_write(rt5691->regmap, RT5691_COMBO_WATER_CTRL_4,
+			rt5691->pdata.jd_resistor);
 
 #ifdef CONFIG_SWITCH
 	switch_dev_register(&rt5691_headset_switch);
