@@ -3104,10 +3104,6 @@ static int rt5691_parse_dt(struct rt5691_priv *rt5691, struct device *dev)
 		for (i = 0; i < ARRAY_SIZE(rt5691_hp_gain_table); i++) {
 			rt5691_hp_gain_table[i].imp = imp_data[i * 2];
 			rt5691_hp_gain_table[i].gain = imp_data[(i * 2) + 1];
-
-			pr_debug("%s: imp=%d ==> gain=%d\n", __func__,
-				rt5691_hp_gain_table[i].imp,
-				rt5691_hp_gain_table[i].gain);
 		}
 	}
 
@@ -3274,7 +3270,7 @@ static int rt5691_headset_detect(struct snd_soc_component *component, int jack_i
 		sar_hs_type = rt5691->pdata.sar_hs_type ?
 			rt5691->pdata.sar_hs_type : 729;
 
-		dev_dbg(component->dev, "sar_adc_value = %d\n", sar_adc_value);
+		dev_info(component->dev, "sar_adc_value = %d\n", sar_adc_value);
 
 		if (rt5691->pdata.sar_hs_open_gender) {
 			if (sar_adc_value > rt5691->pdata.sar_hs_open_gender) {
@@ -3294,7 +3290,7 @@ static int rt5691_headset_detect(struct snd_soc_component *component, int jack_i
 					RT5691_WATER_DET_CTRL_2, 0xf0, 0x90);
 				regmap_update_bits(rt5691->regmap,
 					RT5691_IRQ_CTRL_1, 0x8, 0x8);
-				dev_dbg(component->dev, "jack_type = open gender\n");
+				dev_info(component->dev, "jack_type = open gender\n");
 				return rt5691->jack_type;
 			}
 		}
@@ -3350,7 +3346,7 @@ static int rt5691_headset_detect(struct snd_soc_component *component, int jack_i
 		rt5691->jack_type = 0;
 	}
 
-	dev_dbg(component->dev, "jack_type = %d\n", rt5691->jack_type);
+	dev_info(component->dev, "jack_type = %d\n", rt5691->jack_type);
 
 	return rt5691->jack_type;
 }
@@ -3451,7 +3447,7 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 
 	pm_stay_awake(component->dev);
 
-	pr_debug("%s\n", __func__);
+	pr_info("%s\n", __func__);
 
 	if (rt5691->is_suspend) {
 		/* Because some SOCs need wake up time of I2C controller */
@@ -3484,7 +3480,7 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 							SND_JACK_BTN_0 | SND_JACK_BTN_1 |
 							SND_JACK_BTN_2 | SND_JACK_BTN_3);
 
- 					dev_dbg(component->dev, "open gender jack out\n");
+ 					dev_info(component->dev, "open gender jack out\n");
 				}
 
 				pm_wakeup_event(component->dev, 1000);
@@ -3547,7 +3543,7 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 					if (val & 0x0001) {
 						regmap_write(rt5691->regmap, RT5691_INT_ST_1, 0);
 						btn_type = 0;
-						dev_dbg(component->dev, "JD3 trigger\n");
+						dev_info(component->dev, "JD3 trigger\n");
 					}
 				}
 
@@ -3582,7 +3578,7 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 					break;
 				}
 
-				dev_dbg(component->dev, "jack_type = 0x%04x\n",
+				dev_info(component->dev, "jack_type = 0x%04x\n",
 					rt5691->jack_type);
 			} else {
 				dev_err(component->dev, "%s invalid event\n",
@@ -3621,7 +3617,7 @@ static irqreturn_t rt5691_irq(int irq, void *data)
 	struct rt5691_priv *rt5691 = data;
 	struct snd_soc_component *component = rt5691->component;
 
-	pr_debug("%s\n", __func__);
+	pr_info("%s\n", __func__);
 	pm_wakeup_event(component->dev, 3000);
 	cancel_delayed_work_sync(&rt5691->jack_detect_work);
 	queue_delayed_work(system_wq, &rt5691->jack_detect_work,
@@ -3741,7 +3737,6 @@ static void rt5691_calibrate_handler(struct work_struct *work)
 		calibrate_work.work);
 
 	while (!rt5691->component->card->instantiated) {
-		pr_debug("%s\n", __func__);
 		msleep(20);
 	}
 
@@ -3777,8 +3772,6 @@ static void rt5691_mic_check_handler(struct work_struct *work)
 		if (i % 10 == 0) {
 			sar_adc_value = snd_soc_component_read(component,
 				RT5691_SAR_ADC_DET_CTRL_23);
-
-			pr_debug("%s: sar_adc_value = %d\n", __func__, sar_adc_value);
 		}
 
 		if (rt5691->mic_check_break)
@@ -3810,7 +3803,7 @@ static void rt5691_mic_check_handler(struct work_struct *work)
 		snd_soc_jack_report(rt5691->hs_jack, rt5691->jack_type,
 			SND_JACK_HEADSET);
 
-		pr_debug("%s: jack_type = 0x%04x\n", __func__,
+		pr_info("%s: jack_type = 0x%04x\n", __func__,
 			rt5691->jack_type);
 		return;
 	}
@@ -4274,8 +4267,6 @@ static int rt5691_pm_suspend(struct device *dev)
 {
 	struct rt5691_priv *rt5691 = dev_get_drvdata(dev);
 
-	pr_debug("%s\n", __func__);
-
 	rt5691->is_suspend = true;
 
 	return 0;
@@ -4284,8 +4275,6 @@ static int rt5691_pm_suspend(struct device *dev)
 static int rt5691_pm_resume(struct device *dev)
 {
 	struct rt5691_priv *rt5691 = dev_get_drvdata(dev);
-
-	pr_debug("%s\n", __func__);
 
 	rt5691->is_suspend = false;
 	rt5691->rek = true;
