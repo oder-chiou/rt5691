@@ -2837,8 +2837,8 @@ set_pll:
 		(pll_code.plla_m_bp ? 0 : pll_code.plla_m_code) |
 		pll_code.plla_m_bp << 14 | pll_code.plla_k_bp << 15);
 
-	snd_soc_component_update_bits(component, RT5691_PLLA_CTRL_2, 0x1f,
-		pll_code.plla_n_code);
+	snd_soc_component_update_bits(component, RT5691_PLLA_CTRL_2,
+		RT5691_PLL_N_MAX, pll_code.plla_n_code);
 
 	if (pll_code.use_pllb) {
 		dev_dbg(component->dev, "PLLB m_bypass=%d m=%d n=%d k_bypass=%d k=%d pulse=%d\n",
@@ -2854,7 +2854,7 @@ set_pll:
 			pll_code.pllb_m_bp << 14 | pll_code.pllb_k_bp << 15);
 
 		snd_soc_component_update_bits(component, RT5691_PLLB_CTRL_2,
-			0x1f, pll_code.pllb_n_code);
+			RT5691_PLL_N_MAX, pll_code.pllb_n_code);
 
 		snd_soc_component_update_bits(component, RT5691_PLLB_CTRL_4,
 			1 << 15, pll_code.pllb_pulse << 15);
