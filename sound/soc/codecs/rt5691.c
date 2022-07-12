@@ -3247,7 +3247,7 @@ static int rt5691_headset_detect(struct snd_soc_component *component, int jack_i
 {
 	struct rt5691_priv *rt5691 = snd_soc_component_get_drvdata(component);
 	struct snd_soc_dapm_context *dapm = &component->dapm;
-	unsigned int sar_adc_value, sar_hs_type;
+	unsigned int sar_hs_type;
 
 	if (jack_insert) {
 		regmap_update_bits(rt5691->regmap, RT5691_WATER_DET_CTRL_2, 0xf0, 0);
@@ -3264,16 +3264,16 @@ static int rt5691_headset_detect(struct snd_soc_component *component, int jack_i
 
 		msleep(20);
 
-		sar_adc_value = snd_soc_component_read(component,
+		rt5691->adc_val = snd_soc_component_read(component,
 			RT5691_SAR_ADC_DET_CTRL_23);
 
 		sar_hs_type = rt5691->pdata.sar_hs_type ?
 			rt5691->pdata.sar_hs_type : 729;
 
-		dev_info(component->dev, "sar_adc_value = %d\n", sar_adc_value);
+		dev_info(component->dev, "sar_adc_value = %d\n", rt5691->adc_val);
 
 		if (rt5691->pdata.sar_hs_open_gender) {
-			if (sar_adc_value > rt5691->pdata.sar_hs_open_gender) {
+			if (rt5691->adc_val > rt5691->pdata.sar_hs_open_gender) {
 				rt5691->jack_type = 0;
 				rt5691->open_gender = true;
 				regmap_update_bits(rt5691->regmap,
@@ -3295,7 +3295,7 @@ static int rt5691_headset_detect(struct snd_soc_component *component, int jack_i
 			}
 		}
 
-		if (sar_adc_value > sar_hs_type) {
+		if (rt5691->adc_val > sar_hs_type) {
 			rt5691->jack_type = SND_JACK_HEADSET;
 			if (!rt5691->open_gender) {
 				regmap_write(rt5691->regmap, RT5691_INT_ST_1, 0);
@@ -3580,6 +3580,10 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 
 				dev_info(component->dev, "jack_type = 0x%04x\n",
 					rt5691->jack_type);
+
+				rt5691->btn_det =
+					(rt5691->jack_type & SND_JACK_BTN_0)
+					== SND_JACK_BTN_0 ? 1 : 0;
 			} else {
 				dev_err(component->dev, "%s invalid event\n",
 					__func__);
@@ -3749,7 +3753,7 @@ static void rt5691_mic_check_handler(struct work_struct *work)
 		mic_check_work.work);
 	struct snd_soc_component *component = rt5691->component;
 	struct snd_soc_dapm_context *dapm = &component->dapm;
-	int sar_adc_value, sar_hs_type, i;
+	int sar_hs_type, i;
 
 	pm_wakeup_event(component->dev, 3000);
 
@@ -3770,7 +3774,7 @@ static void rt5691_mic_check_handler(struct work_struct *work)
 		msleep(20);
 
 		if (i % 10 == 0) {
-			sar_adc_value = snd_soc_component_read(component,
+			rt5691->adc_val = snd_soc_component_read(component,
 				RT5691_SAR_ADC_DET_CTRL_23);
 		}
 
@@ -3778,7 +3782,7 @@ static void rt5691_mic_check_handler(struct work_struct *work)
 			break;
 	}
 
-	if (!rt5691->mic_check_break && sar_adc_value > sar_hs_type) {
+	if (!rt5691->mic_check_break && rt5691->adc_val > sar_hs_type) {
 		regmap_write(rt5691->regmap, RT5691_INT_ST_1, 0);
 		regmap_update_bits(rt5691->regmap,
 			RT5691_IRQ_CTRL_2, 0x0018, 0x0018);

@@ -704,6 +704,9 @@ struct rt5691_priv {
 	unsigned int adb_reg_value[0x100];
 	unsigned short adb_reg_num;
 	int dump_reg;
+
+	unsigned int adc_val;
+	int btn_det;
 };
 
 struct rt5691_pll_calc_map {
