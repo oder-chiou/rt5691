@@ -3547,6 +3547,9 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 					}
 				}
 
+				rt5691->adc_val = snd_soc_component_read(component,
+					RT5691_SAR_ADC_DET_CTRL_23);
+
 				switch (btn_type) {
 				case 0x4000:
 				case 0x2000:
