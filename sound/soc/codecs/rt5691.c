@@ -4270,6 +4270,7 @@ static struct acpi_device_id rt5691_acpi_match[] = {
 MODULE_DEVICE_TABLE(acpi, rt5691_acpi_match);
 #endif
 
+#ifdef CONFIG_PM_SLEEP
 static int rt5691_pm_suspend(struct device *dev)
 {
 	struct rt5691_priv *rt5691 = dev_get_drvdata(dev);
@@ -4288,6 +4289,7 @@ static int rt5691_pm_resume(struct device *dev)
 
 	return 0;
 }
+#endif
 
 static const struct dev_pm_ops rt5691_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(rt5691_pm_suspend, rt5691_pm_resume)
