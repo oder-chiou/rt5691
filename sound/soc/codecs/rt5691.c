@@ -4143,7 +4143,7 @@ static int rt5691_i2c_probe(struct i2c_client *i2c,
 	}
 
 	regmap_read(rt5691->regmap, RT5691_DEVICE_ID, &val);
-	if (val != 0x1091) {
+	if (val != 0x1091 && val != 0x6827) {
 		dev_err(&i2c->dev,
 			"Device with ID register %x is not rt5691\n", val);
 		return -ENODEV;
