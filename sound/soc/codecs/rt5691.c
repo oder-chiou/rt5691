@@ -1338,10 +1338,10 @@ static void rt5691_noise_gate(struct snd_soc_component *component, bool enable)
 		snd_soc_component_update_bits(component, RT5691_SIL_DET_CTRL8,
 			0xc000, 0xc000);
 		snd_soc_component_update_bits(component, RT5691_SIL_DET_CTRL9,
-			0x6000, 0x6000);
+			0xf000, 0xf000);
 	} else {
 		snd_soc_component_update_bits(component, RT5691_SIL_DET_CTRL9,
-			0x6000, 0);
+			0xf000, 0);
 		snd_soc_component_update_bits(component, RT5691_SIL_DET_CTRL8,
 			0xc000, 0);
 		snd_soc_component_update_bits(component, RT5691_SIL_DET_TOP,
