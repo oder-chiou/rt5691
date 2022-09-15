@@ -3465,6 +3465,8 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 
 	regmap_read(rt5691->regmap, RT5691_ANLG_READ_STA_324, &val);
 
+	dev_info(component->dev, "JD state = 0x%04x\n", val);
+
 	if (!(val & mask)) {
 		if (rt5691->open_gender) {
 			if (val & 0x2000) {
