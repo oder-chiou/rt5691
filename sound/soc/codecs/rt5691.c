@@ -3932,8 +3932,6 @@ static ssize_t rt5691_codec_reg_write_file(struct file *file,
 	if (kstrtoul(start, 16, &value))
 		return -EINVAL;
 
-	add_taint(TAINT_USER, LOCKDEP_STILL_OK);
-
 	ret = regmap_write(rt5691->regmap, reg, value);
 	if (ret < 0)
 		return ret;
