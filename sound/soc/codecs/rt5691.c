@@ -1833,7 +1833,7 @@ static void rt5691_recalibrate(struct snd_soc_component *component)
 		snd_soc_component_write(component, rt5691_rek_list[i].reg,
 			rt5691_rek_list[i].def);
 	}
-	
+
 	snd_soc_component_update_bits(component, RT5691_OFFSET_CAL_2, 0x0300,
 		0x0300);
 	snd_soc_component_update_bits(component, RT5691_OFFSET_CAL_2, 0x0300,
@@ -3284,7 +3284,7 @@ static int rt5691_headset_detect(struct snd_soc_component *component, int jack_i
 					RT5691_COMBO_JACK_CTRL_2, 0x8000,
 					0x8000);
 				regmap_update_bits(rt5691->regmap,
-					RT5691_COMBO_JACK_CTRL_3, 0x00f3, 0x00e2);				
+					RT5691_COMBO_JACK_CTRL_3, 0x00f3, 0x00e2);
 				regmap_update_bits(rt5691->regmap,
 					RT5691_IRQ_CTRL_2, 0x30, 0x20);
 				regmap_write(rt5691->regmap,
@@ -3769,11 +3769,11 @@ static void rt5691_mic_check_handler(struct work_struct *work)
 	regmap_update_bits(rt5691->regmap, RT5691_PWR_DA_PATH_2, 0x80, 0x80);
 	snd_soc_dapm_force_enable_pin(dapm, "MICBIAS1");
 	snd_soc_dapm_sync(dapm);
-	
+
 	regmap_write(rt5691->regmap, RT5691_SAR_ADC_DET_CTRL_2, 0x2c);
 	regmap_write(rt5691->regmap, RT5691_JACK_TYPE_DET_CTRL_2, 0xfc00);
 	regmap_write(rt5691->regmap, RT5691_SAR_ADC_DET_CTRL_1, 0);
-	
+
 	sar_hs_type = rt5691->pdata.sar_hs_type ?
 		rt5691->pdata.sar_hs_type : 729;
 
@@ -4218,7 +4218,7 @@ static int rt5691_i2c_probe(struct i2c_client *i2c,
 		rt5691_debugfs_root = debugfs_create_dir("rt5691", NULL);
 		if (!rt5691_debugfs_root)
 			dev_err(&i2c->dev,"Failed to create debugfs root\n");
-	
+
 		debugfs_create_file("codec_reg", 0666, rt5691_debugfs_root,
 					rt5691, &rt5691_codec_reg_fops);
 		debugfs_create_file("codec_reg_adb", 0666, rt5691_debugfs_root,
