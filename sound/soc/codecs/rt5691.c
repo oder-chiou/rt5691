@@ -4153,6 +4153,8 @@ static int rt5691_i2c_probe(struct i2c_client *i2c,
 		dev_err(&i2c->dev,
 			"Device with ID register %x is not rt5691\n", val);
 		return -ENODEV;
+	} else {
+		dev_info(&i2c->dev, "Device ID = 0x%04x\n", val);
 	}
 
 	regmap_write(rt5691->regmap, RT5691_RESET, 0);
