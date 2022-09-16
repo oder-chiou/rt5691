@@ -3222,8 +3222,6 @@ static int rt5691_water_detect(struct snd_soc_component *component,
 				snd_soc_component_write(component, rt5691_wt_list[i].reg,
 					rt5691_wt_list_saved[i]);
 			}
-			snd_soc_component_update_bits(component,
-				RT5691_HPOUT_CP_CTRL_1, 0x0c00, 0x0c00);
 
 			snd_soc_dapm_mutex_unlock(dapm);
 			snd_soc_dapm_disable_pin(dapm, "Vref1");
@@ -3232,8 +3230,6 @@ static int rt5691_water_detect(struct snd_soc_component *component,
 			snd_soc_dapm_sync(dapm);
 		}
 	} else {
-		regmap_update_bits(rt5691->regmap, RT5691_HPOUT_CP_CTRL_1,
-			0x0c00, 0);
 		regmap_update_bits(rt5691->regmap, RT5691_IRQ_CTRL_4, 0x0008, 0);
 		regmap_update_bits(rt5691->regmap, RT5691_WATER_DET_CTRL_3,
 			0x8000, 0);
