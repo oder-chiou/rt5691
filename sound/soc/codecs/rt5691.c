@@ -4146,6 +4146,17 @@ static int rt5691_i2c_probe(struct i2c_client *i2c,
 	if (val != 0x1091 && val != 0x6827) {
 		dev_err(&i2c->dev,
 			"Device with ID register %x is not rt5691\n", val);
+
+		if (IS_ERR(regulator_1v8))
+			dev_err(&i2c->dev, "Fail to get regulator_1v8\n");
+		else if (regulator_disable(regulator_1v8))
+			dev_err(&i2c->dev, "Fail to disable regulator_1v8\n");
+
+		if (IS_ERR(regulator_3v3))
+			dev_err(&i2c->dev, "Fail to get regulator_3v3\n");
+		else if (regulator_disable(regulator_3v3))
+			dev_err(&i2c->dev, "Fail to disable regulator_3v3\n");
+
 		return -ENODEV;
 	} else {
 		dev_info(&i2c->dev, "Device ID = 0x%04x\n", val);
