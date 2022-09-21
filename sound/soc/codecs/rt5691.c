@@ -3282,6 +3282,8 @@ static int rt5691_headset_detect(struct snd_soc_component *component, int jack_i
 				regmap_update_bits(rt5691->regmap,
 					RT5691_COMBO_JACK_CTRL_3, 0x00f3, 0x00e2);
 				regmap_update_bits(rt5691->regmap,
+					RT5691_IRQ_CTRL_1, 0x0004, 0);
+				regmap_update_bits(rt5691->regmap,
 					RT5691_IRQ_CTRL_2, 0x30, 0x20);
 				regmap_write(rt5691->regmap,
 					RT5691_SAR_ADC_DET_CTRL_2, 0x20);
@@ -3299,6 +3301,8 @@ static int rt5691_headset_detect(struct snd_soc_component *component, int jack_i
 			rt5691->jack_type = SND_JACK_HEADSET;
 			if (!rt5691->open_gender) {
 				regmap_write(rt5691->regmap, RT5691_INT_ST_1, 0);
+				regmap_update_bits(rt5691->regmap,
+					RT5691_IRQ_CTRL_1, 0x0004, 0x0004);
 				regmap_update_bits(rt5691->regmap,
 					RT5691_IRQ_CTRL_2, 0x0018, 0x0018);
 				regmap_update_bits(rt5691->regmap,
@@ -3443,7 +3447,7 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 	struct rt5691_priv *rt5691 =
 		container_of(work, struct rt5691_priv, jack_detect_work.work);
 	struct snd_soc_component *component = rt5691->component;
-	int val, btn_type, mask;
+	int val, btn_type, mask, i;
 
 	pm_stay_awake(component->dev);
 
@@ -3542,7 +3546,18 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 
 				if (!rt5691->open_gender) {
 					regmap_read(rt5691->regmap, RT5691_INT_ST_1, &val);
-					if (val & 0x0001) {
+					if (val & 0x2000) {
+						regmap_write(rt5691->regmap, RT5691_INT_ST_1, 0);
+						btn_type = 0;
+						dev_info(component->dev, "JD1 trigger\n");
+
+						msleep(200);
+						for(i = 0; i < 16; i++) {
+							if  (!rt5691_button_detect(rt5691->component))
+								break;
+							msleep(50);
+						}
+					} else if (val & 0x0001) {
 						regmap_write(rt5691->regmap, RT5691_INT_ST_1, 0);
 						btn_type = 0;
 						dev_info(component->dev, "JD3 trigger\n");
@@ -3574,6 +3589,11 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 					rt5691->jack_type |= SND_JACK_BTN_3;
 					break;
 				case 0x0000: /* unpressed */
+					if (snd_soc_component_read(component,
+						RT5691_SAR_ADC_DET_CTRL_23) > 2000)
+						regmap_update_bits(rt5691->regmap,
+							RT5691_COMBO_JACK_CTRL_5,
+							0xc007, 0xc005);
 					break;
 				default:
 					btn_type = 0;
@@ -3605,6 +3625,7 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 		rt5691_water_detect(component, false);
 		regmap_update_bits(rt5691->regmap, RT5691_COMBO_JACK_CTRL_2, 0x8000, 0);
 		regmap_update_bits(rt5691->regmap, RT5691_IRQ_CTRL_2, 0x20, 0);
+		regmap_update_bits(rt5691->regmap, RT5691_IRQ_CTRL_1, 0x0004, 0);
 
 		if (rt5691->pdata.delay_plug_in)
 			rt5691->irq_work_delay =
@@ -3789,6 +3810,8 @@ static void rt5691_mic_check_handler(struct work_struct *work)
 
 	if (!rt5691->mic_check_break && rt5691->adc_val > sar_hs_type) {
 		regmap_write(rt5691->regmap, RT5691_INT_ST_1, 0);
+		regmap_update_bits(rt5691->regmap,
+			RT5691_IRQ_CTRL_1, 0x0004, 0x0004);
 		regmap_update_bits(rt5691->regmap,
 			RT5691_IRQ_CTRL_2, 0x0018, 0x0018);
 		regmap_update_bits(rt5691->regmap,
