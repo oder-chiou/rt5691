@@ -1732,11 +1732,13 @@ static int rt5691_set_verf(struct snd_soc_dapm_widget *w,
 static int rt5691_calc_clk_div(struct rt5691_priv *rt5691, int fs,
 	int clk)
 {
+	struct snd_soc_component *component = rt5691->component;
 	int div[] = {1, 2, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128};
 	int i, target;
 
 	if (rt5691->sysclk < 1000000 * div[0]) {
-		pr_warn("Base clock rate %d is too low\n", rt5691->sysclk);
+		dev_warn(component->dev, "Base clock rate %d is too low\n",
+			rt5691->sysclk);
 		return -EINVAL;
 	}
 
@@ -1751,7 +1753,8 @@ static int rt5691_calc_clk_div(struct rt5691_priv *rt5691, int fs,
 			return i;
 	}
 
-	pr_warn("Base clock rate %d is too high\n", rt5691->sysclk);
+	dev_warn(component->dev, "Base clock rate %d is too high\n",
+		rt5691->sysclk);
 
 	return -EINVAL;
 }
@@ -1848,7 +1851,7 @@ static void rt5691_recalibrate(struct snd_soc_component *component)
 			break;
 
 		if (i > 20) {
-			pr_err("HP Recalibration Failure\n");
+			dev_err(component->dev, "HP Recalibration Failure\n");
 			break;
 		}
 
@@ -2689,9 +2692,10 @@ static const struct rt5691_pll_calc_map rt5691_pll_preset_table[] = {
 	{false, 19200000, 24576000, 3, 30, 3, false, false},
 };
 
-int rt5691_plla_calc(const unsigned int freq_in,
+int rt5691_plla_calc(struct rt5691_priv *rt5691, const unsigned int freq_in,
 	const unsigned int freq_out, struct rt5691_pll_code *pll_code)
 {
+	struct snd_soc_component *component = rt5691->component;
 	int max_n = RT5691_PLL_N_MAX, max_m = RT5691_PLL_M_MAX;
 	int k, red, n_t, pll_out, in_t, out_t;
 	int n = 0, m = 0, m_t = 0;
@@ -2740,7 +2744,7 @@ int rt5691_plla_calc(const unsigned int freq_in,
 			}
 		}
 	}
-	pr_debug("Only get approximation about PLL\n");
+	dev_dbg(component->dev, "Only get approximation about PLL\n");
 
 code_find:
 
@@ -2812,13 +2816,13 @@ static int rt5691_set_component_pll(struct snd_soc_component *component,
 				pll_code.pllb_pulse = rt5691_pll_preset_table[i].pllb_pulse;
 			}
 
-			pr_debug("Use preset PLL parameter table\n");
+			dev_dbg(component->dev, "Use preset PLL parameter table\n");
 
 			goto set_pll;
 		}
 	}
 
-	ret = rt5691_plla_calc(freq_in, freq_out, &pll_code);
+	ret = rt5691_plla_calc(rt5691, freq_in, freq_out, &pll_code);
 	if (ret < 0) {
 		dev_err(component->dev, "Unsupport input clock %d\n", freq_in);
 		return ret;
@@ -3460,7 +3464,7 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 
 	pm_stay_awake(component->dev);
 
-	pr_info("%s\n", __func__);
+	dev_info(component->dev, "%s\n", __func__);
 
 	if (rt5691->is_suspend) {
 		/* Because some SOCs need wake up time of I2C controller */
@@ -3656,7 +3660,7 @@ static irqreturn_t rt5691_irq(int irq, void *data)
 	struct rt5691_priv *rt5691 = data;
 	struct snd_soc_component *component = rt5691->component;
 
-	pr_info("%s\n", __func__);
+	dev_info(component->dev, "%s\n", __func__);
 	pm_wakeup_event(component->dev, 3000);
 	cancel_delayed_work_sync(&rt5691->jack_detect_work);
 	queue_delayed_work(system_wq, &rt5691->jack_detect_work,
@@ -3725,7 +3729,7 @@ static void rt5691_calibrate(struct rt5691_priv *rt5691)
 			break;
 
 		if (i > 20) {
-			pr_err("HP Calibration Failure\n");
+			dev_err(component->dev, "HP Calibration Failure\n");
 			regmap_write(rt5691->regmap, RT5691_RESET, 0);
 			regcache_cache_bypass(rt5691->regmap, false);
 			return;
@@ -3850,7 +3854,7 @@ static void rt5691_mic_check_handler(struct work_struct *work)
 		snd_soc_jack_report(rt5691->hs_jack, rt5691->jack_type,
 			SND_JACK_HEADSET);
 
-		pr_info("%s: jack_type = 0x%04x\n", __func__,
+		dev_info(component->dev, "%s: jack_type = 0x%04x\n", __func__,
 			rt5691->jack_type);
 		return;
 	}
