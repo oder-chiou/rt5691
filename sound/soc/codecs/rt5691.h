@@ -699,6 +699,7 @@ struct rt5691_priv {
 	bool mic_check_break;
 	bool rek;
 	unsigned long rek_timeout;
+	bool cal_done;
 
 	unsigned int adb_reg_addr[0x100];
 	unsigned int adb_reg_value[0x100];

@@ -2928,6 +2928,7 @@ static void rt5691_remove(struct snd_soc_component *component)
 {
 	struct rt5691_priv *rt5691 = snd_soc_component_get_drvdata(component);
 
+	rt5691->cal_done = true;
 	cancel_delayed_work_sync(&rt5691->calibrate_work);
 
 	regmap_write(rt5691->regmap, RT5691_RESET, 0);
@@ -3177,9 +3178,13 @@ static int rt5691_water_detect(struct snd_soc_component *component,
 		regmap_update_bits(rt5691->regmap, RT5691_WATER_DET_CTRL_3, 0x8000,
 			0x8000);
 
-		while (!(snd_soc_component_read(component,
-			RT5691_WATER_DET_CTRL_3) & 0x4))
-			msleep(20);
+		for (i = 0; i < 25; i++) {
+			if (!(snd_soc_component_read(component,
+				RT5691_WATER_DET_CTRL_3) & 0x4))
+				msleep(20);
+			else
+				break;
+		}
 
 		if ((snd_soc_component_read(component,
 			RT5691_WATER_DET_CTRL_3) & 0x3) == 0x2) {
@@ -3769,9 +3774,15 @@ static void rt5691_calibrate_handler(struct work_struct *work)
 {
 	struct rt5691_priv *rt5691 = container_of(work, struct rt5691_priv,
 		calibrate_work.work);
+	int i = 0;
 
 	while (!rt5691->component->card->instantiated) {
 		msleep(20);
+
+		if (rt5691->cal_done || i > 250)
+			return;
+
+		i++;
 	}
 
 	rt5691_calibrate(rt5691);
