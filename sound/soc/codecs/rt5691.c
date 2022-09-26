@@ -3313,21 +3313,26 @@ static int rt5691_headset_detect(struct snd_soc_component *component, int jack_i
 		if (rt5691->adc_val > sar_hs_type) {
 			rt5691->jack_type = SND_JACK_HEADSET;
 			if (!rt5691->open_gender) {
-				regmap_write(rt5691->regmap, RT5691_INT_ST_1, 0);
 				regmap_update_bits(rt5691->regmap,
 					RT5691_IRQ_CTRL_1, 0x0004, 0x0004);
 				regmap_update_bits(rt5691->regmap,
 					RT5691_IRQ_CTRL_2, 0x0018, 0x0018);
+				regmap_write(rt5691->regmap, RT5691_INT_ST_1, 0);
 				regmap_update_bits(rt5691->regmap,
 					RT5691_COMBO_JACK_CTRL_3, 0x00f3, 0x00e1);
-				regmap_update_bits(rt5691->regmap,
-					RT5691_COMBO_JACK_CTRL_5, 0xc007, 0xc004);
+				if (rt5691->adc_val > 2000) {
+					regmap_update_bits(rt5691->regmap,
+						RT5691_COMBO_JACK_CTRL_5, 0xc007, 0xc005);
+				} else {
+					regmap_update_bits(rt5691->regmap,
+						RT5691_COMBO_JACK_CTRL_5, 0xc007, 0xc004);
+					regmap_update_bits(rt5691->regmap,
+						RT5691_COMBO_JACK_CTRL_2, 0x8000, 0x8000);
+				}
 				regmap_update_bits(rt5691->regmap,
 					RT5691_MONO_ANLG_DRE_CTRL_2, 0x0600, 0x0600);
 				regmap_update_bits(rt5691->regmap,
 					RT5691_COMBO_JACK_CTRL_4, 0x600, 0x600);
-				regmap_update_bits(rt5691->regmap,
-					RT5691_COMBO_JACK_CTRL_2, 0x8000, 0x8000);
 				regmap_update_bits(rt5691->regmap,
 					RT5691_PWR_DA_PATH_2, 0x400, 0x400);
 			}
@@ -3603,10 +3608,16 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 					break;
 				case 0x0000: /* unpressed */
 					if (snd_soc_component_read(component,
-						RT5691_SAR_ADC_DET_CTRL_23) > 2000)
+						RT5691_SAR_ADC_DET_CTRL_23) > 2000) {
 						regmap_update_bits(rt5691->regmap,
 							RT5691_COMBO_JACK_CTRL_5,
 							0xc007, 0xc005);
+						regmap_update_bits(rt5691->regmap,
+							RT5691_COMBO_JACK_CTRL_2,
+							0x8000, 0);
+						regmap_write(rt5691->regmap,
+							RT5691_INT_ST_1, 0);
+					}
 					break;
 				default:
 					btn_type = 0;
