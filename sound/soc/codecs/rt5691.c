@@ -3187,11 +3187,13 @@ static int rt5691_water_detect(struct snd_soc_component *component,
 				0);
 
 			snd_soc_component_update_bits(component, RT5691_HP_AMP_CTRL_2,
-				0x3000, 0);
+				0x3000, rt5691_wt_list_saved[ARRAY_SIZE(rt5691_wt_list) - 3]);
 			snd_soc_component_update_bits(component,
-				RT5691_HP_AMP_DET_CTRL_14, 0x0070, 0x0020);
+				RT5691_HP_AMP_DET_CTRL_14, 0x0070,
+				rt5691_wt_list_saved[ARRAY_SIZE(rt5691_wt_list) - 1]);
 			snd_soc_component_update_bits(component,
-				RT5691_HP_AMP_DET_CTRL_18, 0x000c, 0);
+				RT5691_HP_AMP_DET_CTRL_18, 0x000c,
+				rt5691_wt_list_saved[ARRAY_SIZE(rt5691_wt_list) - 2]);
 
 			for (i = ARRAY_SIZE(rt5691_wt_list) - 4; i >= 0; i--)
 				snd_soc_component_write(component, rt5691_wt_list[i].reg,
@@ -3209,11 +3211,13 @@ static int rt5691_water_detect(struct snd_soc_component *component,
 			rt5691->wt_en = true;
 
 			snd_soc_component_update_bits(component, RT5691_HP_AMP_CTRL_2,
-				0x3000, 0);
+				0x3000, rt5691_wt_list_saved[ARRAY_SIZE(rt5691_wt_list) - 3]);
 			snd_soc_component_update_bits(component,
-				RT5691_HP_AMP_DET_CTRL_14, 0x0070, 0x0020);
+				RT5691_HP_AMP_DET_CTRL_14, 0x0070,
+				rt5691_wt_list_saved[ARRAY_SIZE(rt5691_wt_list) - 1]);
 			snd_soc_component_update_bits(component,
-				RT5691_HP_AMP_DET_CTRL_18, 0x000c, 0);
+				RT5691_HP_AMP_DET_CTRL_18, 0x000c,
+				rt5691_wt_list_saved[ARRAY_SIZE(rt5691_wt_list) - 2]);
 
 			for (i = ARRAY_SIZE(rt5691_wt_list) - 4; i >= 0; i--) {
 				if (rt5691_wt_list[i].reg == RT5691_PWR_DA_PATH_2)
