@@ -3565,7 +3565,7 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 						dev_info(component->dev, "JD1 trigger\n");
 
 						msleep(200);
-						for(i = 0; i < 16; i++) {
+						for (i = 0; i < 16; i++) {
 							if  (!rt5691_button_detect(rt5691->component))
 								break;
 							msleep(50);
