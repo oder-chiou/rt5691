@@ -3320,17 +3320,17 @@ static int rt5691_headset_detect(struct snd_soc_component *component, int jack_i
 				regmap_write(rt5691->regmap, RT5691_INT_ST_1, 0);
 				regmap_update_bits(rt5691->regmap,
 					RT5691_COMBO_JACK_CTRL_3, 0x00f3, 0x00e1);
+				regmap_update_bits(rt5691->regmap,
+					RT5691_MONO_ANLG_DRE_CTRL_2, 0x0600, 0x0600);
 				if (rt5691->adc_val > 2000) {
 					regmap_update_bits(rt5691->regmap,
 						RT5691_COMBO_JACK_CTRL_5, 0xc007, 0xc005);
 				} else {
 					regmap_update_bits(rt5691->regmap,
-						RT5691_COMBO_JACK_CTRL_5, 0xc007, 0xc004);
-					regmap_update_bits(rt5691->regmap,
 						RT5691_COMBO_JACK_CTRL_2, 0x8000, 0x8000);
+					regmap_update_bits(rt5691->regmap,
+						RT5691_COMBO_JACK_CTRL_5, 0xc007, 0xc004);
 				}
-				regmap_update_bits(rt5691->regmap,
-					RT5691_MONO_ANLG_DRE_CTRL_2, 0x0600, 0x0600);
 				regmap_update_bits(rt5691->regmap,
 					RT5691_COMBO_JACK_CTRL_4, 0x600, 0x600);
 				regmap_update_bits(rt5691->regmap,
@@ -3541,6 +3541,7 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 #ifdef CONFIG_SWITCH
 				switch_set_state(&rt5691_headset_switch, 1);
 #endif
+				rt5691->button_timeout = jiffies + (HZ * 1);
 			} else if (rt5691->jack_type == SND_JACK_HEADPHONE) {
 #ifdef CONFIG_SWITCH
 				switch_set_state(&rt5691_headset_switch, 2);
@@ -3580,6 +3581,13 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 						btn_type = 0;
 						dev_info(component->dev, "JD3 trigger\n");
 					}
+				}
+
+				if (time_before(jiffies, rt5691->button_timeout)) {
+					btn_type = 0;
+					dev_warn(rt5691->component->dev,
+						"%s: invalid button event\n",
+						__func__);
 				}
 
 				rt5691->adc_val = snd_soc_component_read(component,
@@ -3839,21 +3847,26 @@ static void rt5691_mic_check_handler(struct work_struct *work)
 	}
 
 	if (!rt5691->mic_check_break && rt5691->adc_val > sar_hs_type) {
-		regmap_write(rt5691->regmap, RT5691_INT_ST_1, 0);
 		regmap_update_bits(rt5691->regmap,
 			RT5691_IRQ_CTRL_1, 0x0004, 0x0004);
 		regmap_update_bits(rt5691->regmap,
 			RT5691_IRQ_CTRL_2, 0x0018, 0x0018);
+		regmap_write(rt5691->regmap, RT5691_INT_ST_1, 0);
 		regmap_update_bits(rt5691->regmap,
 			RT5691_COMBO_JACK_CTRL_3, 0x00f3, 0x00e1);
 		regmap_update_bits(rt5691->regmap,
-			RT5691_COMBO_JACK_CTRL_5, 0xc007, 0xc004);
-		regmap_update_bits(rt5691->regmap,
 			RT5691_MONO_ANLG_DRE_CTRL_2, 0x0600, 0x0600);
+		if (rt5691->adc_val > 2000) {
+			regmap_update_bits(rt5691->regmap,
+				RT5691_COMBO_JACK_CTRL_5, 0xc007, 0xc005);
+		} else {
+			regmap_update_bits(rt5691->regmap,
+				RT5691_COMBO_JACK_CTRL_2, 0x8000, 0x8000);
+			regmap_update_bits(rt5691->regmap,
+				RT5691_COMBO_JACK_CTRL_5, 0xc007, 0xc004);
+		}
 		regmap_update_bits(rt5691->regmap,
 			RT5691_COMBO_JACK_CTRL_4, 0x600, 0x600);
-		regmap_update_bits(rt5691->regmap,
-			RT5691_COMBO_JACK_CTRL_2, 0x8000, 0x8000);
 		regmap_update_bits(rt5691->regmap,
 			RT5691_PWR_DA_PATH_2, 0x400, 0x400);
 
@@ -3862,6 +3875,7 @@ static void rt5691_mic_check_handler(struct work_struct *work)
 #ifdef CONFIG_SWITCH
 		switch_set_state(&rt5691_headset_switch, 1);
 #endif
+		rt5691->button_timeout = jiffies + (HZ * 1);
 		snd_soc_jack_report(rt5691->hs_jack, rt5691->jack_type,
 			SND_JACK_HEADSET);
 

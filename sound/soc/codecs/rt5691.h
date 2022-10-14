@@ -708,6 +708,7 @@ struct rt5691_priv {
 
 	unsigned int adc_val;
 	int btn_det;
+	unsigned long button_timeout;
 };
 
 struct rt5691_pll_calc_map {
