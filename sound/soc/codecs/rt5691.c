@@ -3121,8 +3121,10 @@ static void rt5691_enable_push_button_irq(struct snd_soc_component *component,
 	struct rt5691_priv *rt5691 = snd_soc_component_get_drvdata(component);
 
 	if (enable) {
-		snd_soc_component_write(component, RT5691_MIC_BTN_CTRL_16, 0);
+		snd_soc_component_write(component, RT5691_MIC_BTN_CTRL_16, 0xff);
 		snd_soc_component_write(component, RT5691_MIC_BTN_CTRL_17, 0x3);
+		snd_soc_component_update_bits(component,
+			RT5691_SAR_ADC_DET_CTRL_4, 0x8, 0x8);
 		snd_soc_component_update_bits(component, RT5691_PWR_DA_PATH_2, 0x40, 0x40);
 		if (rt5691->open_gender)
 			msleep(20);
