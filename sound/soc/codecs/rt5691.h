@@ -701,8 +701,8 @@ struct rt5691_priv {
 	unsigned long rek_timeout;
 	bool cal_done;
 
-	unsigned int adb_reg_addr[0x100];
-	unsigned int adb_reg_value[0x100];
+	unsigned int adb_reg_addr[0x40];
+	unsigned int adb_reg_value[0x40];
 	unsigned short adb_reg_num;
 	int dump_reg;
 

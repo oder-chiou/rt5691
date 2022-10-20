@@ -4054,19 +4054,17 @@ static ssize_t rt5691_codec_reg_adb_write_file(struct file *file,
 	const char __user *user_buf, size_t count, loff_t *ppos)
 {
 	struct rt5691_priv *rt5691 = file->private_data;
-	char *buf;
+	char buf[768];
+	size_t buf_size;
 	unsigned int value;
 	int i = 2, j = 0;
 
-	buf = kzalloc(count, GFP_KERNEL);
-	if (!buf)
-		return -ENOMEM;
-
-	if (copy_from_user(buf, user_buf, count))
+	buf_size = min(count, (sizeof(buf)-1));
+	if (copy_from_user(buf, user_buf, buf_size))
 		return -EFAULT;
 
 	if (buf[0] == 'R' || buf[0] == 'r') {
-		while (j <= 0xff && i < count) {
+		while (j <= 0x3f && i < count) {
 			rt5691->adb_reg_addr[j] = 0;
 			value = 0;
 			for ( ; i < count; i++) {
@@ -4086,7 +4084,7 @@ static ssize_t rt5691_codec_reg_adb_write_file(struct file *file,
 		}
 		rt5691->adb_reg_num = j;
 	} else if (buf[0] == 'W' || buf[0] == 'w') {
-		while (j <= 0xff && i < count) {
+		while (j <= 0x3f && i < count) {
 			/* Get address */
 			rt5691->adb_reg_addr[j] = 0;
 			value = 0;
@@ -4131,7 +4129,6 @@ static ssize_t rt5691_codec_reg_adb_write_file(struct file *file,
 		}
 	}
 
-	kfree(buf);
 	return count;
 }
 
@@ -4295,13 +4292,16 @@ static int rt5691_i2c_probe(struct i2c_client *i2c,
 
 #ifdef CONFIG_DEBUG_FS
 		rt5691_debugfs_root = debugfs_create_dir("rt5691", NULL);
-		if (!rt5691_debugfs_root)
+		if (!rt5691_debugfs_root) {
 			dev_err(&i2c->dev,"Failed to create debugfs root\n");
-
-		debugfs_create_file("codec_reg", 0666, rt5691_debugfs_root,
-					rt5691, &rt5691_codec_reg_fops);
-		debugfs_create_file("codec_reg_adb", 0666, rt5691_debugfs_root,
-					rt5691, &rt5691_codec_reg_adb_fops);
+		} else {
+			debugfs_create_file("codec_reg", 0666,
+				rt5691_debugfs_root, rt5691,
+				&rt5691_codec_reg_fops);
+			debugfs_create_file("codec_reg_adb", 0666,
+				rt5691_debugfs_root, rt5691,
+				&rt5691_codec_reg_adb_fops);
+		}
 #endif
 
 	INIT_DELAYED_WORK(&rt5691->jack_detect_work,
