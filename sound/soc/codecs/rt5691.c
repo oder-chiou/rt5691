@@ -3019,6 +3019,50 @@ static int rt5691_set_jack_detect(struct snd_soc_component *component,
 	return 0;
 }
 
+static int rt5691_i2c_read(void *context, unsigned int reg, unsigned int *val)
+{
+	struct i2c_client *i2c = context;
+	struct rt5691_priv *rt5691 = i2c_get_clientdata(i2c);
+	struct rt5691_i2c_err *i2c_err = rt5691->i2c_err;
+	int ret, i;
+
+	for (i = 0; i < rt5691->pdata.i2c_op_count; i++) {
+		ret = regmap_read(rt5691->i2c_regmap, reg, val);
+		if (ret) {
+			dev_err(&i2c->dev, "%s err: %d\n", __func__, ret);
+			if (i2c_err && i2c_err->i2c_err_cb)
+				i2c_err->i2c_err_cb(i2c_err->i2c_err_priv);
+			continue;
+		} else {
+			break;
+		}
+	}
+
+	return ret;
+}
+
+static int rt5691_i2c_write(void *context, unsigned int reg, unsigned int val)
+{
+	struct i2c_client *i2c = context;
+	struct rt5691_priv *rt5691 = i2c_get_clientdata(i2c);
+	struct rt5691_i2c_err *i2c_err = rt5691->i2c_err;
+	int ret, i;
+
+	for (i = 0; i < rt5691->pdata.i2c_op_count; i++) {
+		ret = regmap_write(rt5691->i2c_regmap, reg, val);
+		if (ret) {
+			dev_err(&i2c->dev, "%s err: %d\n", __func__, ret);
+			if (i2c_err && i2c_err->i2c_err_cb)
+				i2c_err->i2c_err_cb(i2c_err->i2c_err_priv);
+			continue;
+		} else {
+			break;
+		}
+	}
+
+	return ret;
+}
+
 const struct snd_soc_component_driver rt5691_soc_component_dev = {
 	.probe = rt5691_probe,
 	.remove = rt5691_remove,
@@ -3037,6 +3081,28 @@ const struct snd_soc_component_driver rt5691_soc_component_dev = {
 	.use_pmdown_time	= 1,
 	.endianness		= 1,
 	.non_legacy_dai_naming	= 1,
+};
+
+static const struct regmap_config rt5691_i2c_regmap = {
+	.name = "i2c",
+	.reg_bits = 16,
+	.val_bits = 16,
+	.cache_type = REGCACHE_NONE,
+};
+
+static const struct regmap_config rt5691_debug_regmap = {
+	.reg_bits = 16,
+	.val_bits = 16,
+	.max_register = RT5691_HP_AMP_DET_CTRL_20,
+	.volatile_reg = rt5691_volatile_register,
+	.readable_reg = rt5691_readable_register,
+	.cache_type = REGCACHE_RBTREE,
+	.reg_defaults = rt5691_reg,
+	.num_reg_defaults = ARRAY_SIZE(rt5691_reg),
+	.use_single_read = true,
+	.use_single_write = true,
+	.reg_read = rt5691_i2c_read,
+	.reg_write = rt5691_i2c_write,
 };
 
 static const struct regmap_config rt5691_regmap = {
@@ -3060,7 +3126,7 @@ MODULE_DEVICE_TABLE(i2c, rt5691_i2c_id);
 
 static int rt5691_parse_dt(struct rt5691_priv *rt5691, struct device *dev)
 {
-	int i;
+	int i, i2c_retry = 0;
 	u32 imp_data[ARRAY_SIZE(rt5691_hp_gain_table) * 2];
 
 	rt5691->pdata.in1_diff = of_property_read_bool(dev->of_node,
@@ -3112,6 +3178,15 @@ static int rt5691_parse_dt(struct rt5691_priv *rt5691, struct device *dev)
 			rt5691_hp_gain_table[i].gain = imp_data[(i * 2) + 1];
 		}
 	}
+
+	if (of_property_read_bool(dev->of_node, "realtek,i2c-dbg-cb"))
+		rt5691->pdata.i2c_op_count = 1;
+
+	of_property_read_u32(dev->of_node, "realtek,i2c-dbg-retry",
+		&i2c_retry);
+
+	if (i2c_retry)
+		rt5691->pdata.i2c_op_count = i2c_retry + 1;
 
 	return 0;
 }
@@ -4201,12 +4276,31 @@ static int rt5691_i2c_probe(struct i2c_client *i2c,
 	/* Sleep for 100 ms minimum */
 	usleep_range(100000, 150000);
 
-	rt5691->regmap = devm_regmap_init_i2c(i2c, &rt5691_regmap);
-	if (IS_ERR(rt5691->regmap)) {
-		ret = PTR_ERR(rt5691->regmap);
-		dev_err(&i2c->dev, "Failed to allocate register map: %d\n",
-			ret);
-		return ret;
+	if (rt5691->pdata.i2c_op_count) {
+		rt5691->i2c_regmap = devm_regmap_init_i2c(i2c, &rt5691_i2c_regmap);
+		if (IS_ERR(rt5691->i2c_regmap)) {
+			ret = PTR_ERR(rt5691->i2c_regmap);
+			dev_err(&i2c->dev, "Failed to allocate i2c_regmap: %d\n",
+				ret);
+			return ret;
+		}
+
+		rt5691->regmap = devm_regmap_init(&i2c->dev, NULL, i2c,
+						&rt5691_debug_regmap);
+		if (IS_ERR(rt5691->regmap)) {
+			ret = PTR_ERR(rt5691->regmap);
+			dev_err(&i2c->dev, "Failed to allocate debug_regmap: %d\n",
+				ret);
+			return ret;
+		}
+	} else {
+		rt5691->regmap = devm_regmap_init_i2c(i2c, &rt5691_regmap);
+		if (IS_ERR(rt5691->regmap)) {
+			ret = PTR_ERR(rt5691->regmap);
+			dev_err(&i2c->dev, "Failed to allocate regmap: %d\n",
+				ret);
+			return ret;
+		}
 	}
 
 	regmap_read(rt5691->regmap, RT5691_DEVICE_ID, &val);

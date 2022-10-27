@@ -665,11 +665,17 @@ enum {
 	RT5691_PLL1_S_BCLK,
 };
 
+struct rt5691_i2c_err {
+	void *i2c_err_priv;
+	int (*i2c_err_cb)(void *context);
+};
+
 struct rt5691_priv {
 	struct snd_soc_component *component;
 	struct rt5691_platform_data pdata;
-	struct regmap *regmap;
+	struct regmap *regmap,*i2c_regmap;
 	struct snd_soc_jack *hs_jack;
+	struct rt5691_i2c_err *i2c_err;
 	struct delayed_work jack_detect_work, calibrate_work, mic_check_work;
 	struct delayed_work sto1_l_adc_work, sto1_r_adc_work;
 	struct delayed_work sto2_l_adc_work, sto2_r_adc_work;
