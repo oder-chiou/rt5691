@@ -3742,6 +3742,8 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 				rt5691->pdata.delay_plug_in;
 		else
 			rt5691->irq_work_delay = 50;
+
+		rt5691->adc_val = 0;
 	}
 
 	snd_soc_jack_report(rt5691->hs_jack, rt5691->jack_type,
