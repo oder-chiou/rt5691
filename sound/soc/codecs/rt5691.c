@@ -3293,6 +3293,8 @@ static int rt5691_water_detect(struct snd_soc_component *component,
 			snd_soc_dapm_disable_pin(dapm, "RC 25M");
 			snd_soc_dapm_sync(dapm);
 		} else {
+			dev_info(component->dev, "water detected\n");
+
 			regmap_update_bits(rt5691->regmap, RT5691_IRQ_CTRL_4,
 				0x0008, 0x0008);
 			rt5691->wt_en = true;
@@ -3598,6 +3600,8 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 			if (val & 0x2) {
 				rt5691_water_detect(component, false);
 			} else {
+				dev_info(component->dev, "water detected 0x%04x\n",
+					val);
 				pm_wakeup_event(component->dev, 1000);
 				return;
 			}
