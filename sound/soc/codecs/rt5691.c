@@ -633,6 +633,8 @@ static struct reg_sequence rt5691_init_list[] = {
 	{RT5691_ADC_FILTER2_CTRL_3, 		0x0090},
 	{RT5691_HPOUT_CP_CTRL_1, 		0x5018},
 	{RT5691_GPIO_CLK, 			0x8000},
+	{RT5691_ADC_FILTER_CTRL_7, 		0x0001},
+	{RT5691_ADC_FILTER_CTRL_9, 		0x0001},
 };
 
 static bool rt5691_volatile_register(struct device *dev, unsigned int reg)
