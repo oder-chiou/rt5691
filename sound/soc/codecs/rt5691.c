@@ -652,7 +652,6 @@ static bool rt5691_volatile_register(struct device *dev, unsigned int reg)
 	case RT5691_MIC_BTN_CTRL_2:
 	case RT5691_MIC_BTN_CTRL_13:
 	case RT5691_MIC_BTN_CTRL_14:
-	case RT5691_MIC_BTN_CTRL_26:
 	case RT5691_MIC_BTN_CTRL_27:
 	case RT5691_MIC_BTN_CTRL_28:
 	case RT5691_DMIC_FLOATING_DET_CTRL_1:
