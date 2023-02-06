@@ -3553,8 +3553,12 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 	dev_info(component->dev, "%s\n", __func__);
 
 	if (rt5691->is_suspend) {
-		/* Because some SOCs need wake up time of I2C controller */
-		msleep(50);
+		dev_info(component->dev, "%s wait resume\n", __func__);
+		i = 0;
+		while (i < 10 && rt5691->is_suspend) {
+			msleep(50);
+			i++;
+		}
 	}
 
 	rt5691->mic_check_break = true;
@@ -3562,7 +3566,11 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 
 	mask = 0x8000;
 
-	regmap_read(rt5691->regmap, RT5691_ANLG_READ_STA_324, &val);
+	i = 0;
+	while (regmap_read(rt5691->regmap, RT5691_ANLG_READ_STA_324, &val) && i < 5) {
+		msleep(100);
+		i++;
+	}
 
 	dev_info(component->dev, "JD state = 0x%04x\n", val);
 
