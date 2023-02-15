@@ -3624,6 +3624,14 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 			rt5691->jack_type = rt5691_headset_detect(
 				rt5691->component, 1);
 
+			regmap_read(rt5691->regmap, RT5691_ANLG_READ_STA_324, &val);
+			if (val & mask) {
+				queue_delayed_work(system_wq, &rt5691->jack_detect_work,
+					msecs_to_jiffies(50));
+				pm_wakeup_event(component->dev, 1000);
+				return;
+			}
+
 			rt5691->irq_work_delay =
 				rt5691->pdata.delay_plug_out_pb ?
 				rt5691->pdata.delay_plug_out_pb : 0;
