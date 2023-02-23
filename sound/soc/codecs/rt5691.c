@@ -4441,6 +4441,8 @@ static int rt5691_i2c_probe(struct i2c_client *i2c,
 	if (i2c->irq)
 		rt5691->irq = i2c->irq;
 
+	device_init_wakeup(&i2c->dev, true);
+
 	return devm_snd_soc_register_component(&i2c->dev, &rt5691_soc_component_dev,
 			rt5691_dai, ARRAY_SIZE(rt5691_dai));
 }
@@ -4451,6 +4453,7 @@ static int rt5691_i2c_remove(struct i2c_client *i2c)
 #ifdef CONFIG_SWITCH
 	switch_dev_unregister(&rt5691_headset_switch);
 #endif
+	device_init_wakeup(&i2c->dev, false);
 
 	return 0;
 }

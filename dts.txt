@@ -16,4 +16,3 @@ realtek,imp_table = <
   0x0067 0 // 64 ohm
   0xffff 0 // > 100 ohm
 >;
-wakeup-source;
