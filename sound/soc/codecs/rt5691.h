@@ -673,7 +673,7 @@ struct rt5691_i2c_err {
 struct rt5691_priv {
 	struct snd_soc_component *component;
 	struct rt5691_platform_data pdata;
-	struct regmap *regmap,*i2c_regmap;
+	struct regmap *regmap, *i2c_regmap;
 	struct snd_soc_jack *hs_jack;
 	struct rt5691_i2c_err *i2c_err;
 	struct delayed_work jack_detect_work, calibrate_work, mic_check_work;

@@ -627,14 +627,14 @@ static struct reg_sequence rt5691_init_list[] = {
 	{RT5691_COMBO_WATER_CTRL_5,		0x07c0},
 	{RT5691_COMBO_JACK_CTRL_2,		0x0010},
 	{RT5691_COMBO_JACK_CTRL_3,		0x18e2},
-	{RT5691_STO_DRE_CTRL_2, 		0x0041},
-	{RT5691_STO_DRE_CTRL_3, 		0x040c},
-	{RT5691_ADC_FILTER_CTRL_3, 		0x0090},
-	{RT5691_ADC_FILTER2_CTRL_3, 		0x0090},
-	{RT5691_HPOUT_CP_CTRL_1, 		0x5018},
-	{RT5691_GPIO_CLK, 			0x8000},
-	{RT5691_ADC_FILTER_CTRL_7, 		0x0001},
-	{RT5691_ADC_FILTER_CTRL_9, 		0x0001},
+	{RT5691_STO_DRE_CTRL_2,			0x0041},
+	{RT5691_STO_DRE_CTRL_3,			0x040c},
+	{RT5691_ADC_FILTER_CTRL_3,		0x0090},
+	{RT5691_ADC_FILTER2_CTRL_3,		0x0090},
+	{RT5691_HPOUT_CP_CTRL_1,		0x5018},
+	{RT5691_GPIO_CLK,			0x8000},
+	{RT5691_ADC_FILTER_CTRL_7,		0x0001},
+	{RT5691_ADC_FILTER_CTRL_9,		0x0001},
 };
 
 static bool rt5691_volatile_register(struct device *dev, unsigned int reg)
@@ -1744,8 +1744,7 @@ static int rt5691_calc_clk_div(struct rt5691_priv *rt5691, int fs,
 		return -EINVAL;
 	}
 
-	if (fs
-)
+	if (fs)
 		target = rt5691->lrck * fs;
 	else
 		target = clk;
@@ -1807,14 +1806,14 @@ static void rt5691_recalibrate(struct snd_soc_component *component)
 		{RT5691_MIC_BTN_CTRL_26,		0x0088},
 		{RT5691_ADC_FILTER_CTRL_3,		0x0090},
 		{RT5691_ADC_FILTER2_CTRL_3,		0x0090},
-		{RT5691_RC_CLK, 			0x8800},
+		{RT5691_RC_CLK,				0x8800},
 		{RT5691_SYS_CLK_SRC,			0x007d},
 		{RT5691_PWR_DA_PATH_1,			0x6801},
 		{RT5691_PWR_DA_PATH_2,			0x0223},
 		{RT5691_PWR_AD_PATH,			0x0023},
 		{RT5691_DA_STO1_FILTER_CLK_DIV,		0x0202},
-		{RT5691_AD_STO1_FILTER_CLK_DIV, 	0x0202},
-		{RT5691_ADC_AND_DAC_OSR,	 	0x0202},
+		{RT5691_AD_STO1_FILTER_CLK_DIV,		0x0202},
+		{RT5691_ADC_AND_DAC_OSR,		0x0202},
 		{RT5691_STO1_DAC_MIXER_CTRL,		0x2888},
 		{RT5691_HP_BEHAVIOR_LOGIC_CTRL_2,	0x0000},
 		{RT5691_BGLDO33_CTRL_1,			0x8000},
@@ -3139,7 +3138,7 @@ static int rt5691_parse_dt(struct rt5691_priv *rt5691, struct device *dev)
 
 	rt5691->pdata.ldo1_en = of_get_named_gpio(dev->of_node,
 		"realtek,ldo1_en", 0);
-	rt5691->pdata.gpio_1v8= of_get_named_gpio(dev->of_node,
+	rt5691->pdata.gpio_1v8 = of_get_named_gpio(dev->of_node,
 		"realtek,gpio_1v8", 0);
 	rt5691->pdata.gpio_3v3 = of_get_named_gpio(dev->of_node,
 		"realtek,gpio_3v3", 0);
@@ -3223,11 +3222,11 @@ static int rt5691_water_detect(struct snd_soc_component *component,
 		{RT5691_MIC_BTN_CTRL_26,		0x0088},
 		{RT5691_ADC_FILTER_CTRL_3,		0x0090},
 		{RT5691_ADC_FILTER2_CTRL_3,		0x0090},
-		{RT5691_HP_AMP_L_GAIN_CTRL, 		0x0000},
-		{RT5691_HP_AMP_R_GAIN_CTRL, 		0x0000},
+		{RT5691_HP_AMP_L_GAIN_CTRL,		0x0000},
+		{RT5691_HP_AMP_R_GAIN_CTRL,		0x0000},
 		{RT5691_SYS_CLK_SRC,			0x006d},
 		{RT5691_DA_STO1_FILTER_CLK_DIV,		0x0202},
-		{RT5691_ADC_AND_DAC_OSR,	 	0x0202},
+		{RT5691_ADC_AND_DAC_OSR,		0x0202},
 		{RT5691_PWR_DA_PATH_1,			0x2001},
 		{RT5691_PWR_DA_PATH_2,			0x0020},
 		{RT5691_STO1_DAC_MIXER_CTRL,		0xa8a8},
@@ -3475,13 +3474,13 @@ static unsigned int rt5691_imp_detect(struct snd_soc_component *component)
 		{RT5691_MIC_BTN_CTRL_26,		0x0088},
 		{RT5691_ADC_FILTER_CTRL_3,		0x0090},
 		{RT5691_ADC_FILTER2_CTRL_3,		0x0090},
-		{RT5691_HP_AMP_L_GAIN_CTRL, 		0x0000},
-		{RT5691_HP_AMP_R_GAIN_CTRL, 		0x0000},
+		{RT5691_HP_AMP_L_GAIN_CTRL,		0x0000},
+		{RT5691_HP_AMP_R_GAIN_CTRL,		0x0000},
 		{RT5691_RC_CLK,				0x8800},
 		{RT5691_SYS_CLK_SRC,			0x007d},
 		{RT5691_DA_STO1_FILTER_CLK_DIV,		0x0202},
-		{RT5691_AD_STO1_FILTER_CLK_DIV, 	0x0202},
-		{RT5691_ADC_AND_DAC_OSR,	 	0x0202},
+		{RT5691_AD_STO1_FILTER_CLK_DIV,		0x0202},
+		{RT5691_ADC_AND_DAC_OSR,		0x0202},
 		{RT5691_PWR_DA_PATH_1,			0x2001},
 		{RT5691_PWR_DA_PATH_2,			0x0013},
 		{RT5691_PWR_AD_PATH,			0x0002},
@@ -3593,7 +3592,7 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 							SND_JACK_BTN_0 | SND_JACK_BTN_1 |
 							SND_JACK_BTN_2 | SND_JACK_BTN_3);
 
- 					dev_info(component->dev, "open gender jack out\n");
+					dev_info(component->dev, "open gender jack out\n");
 				}
 
 				pm_wakeup_event(component->dev, 1000);
@@ -3646,7 +3645,7 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 				switch_set_state(&rt5691_headset_switch, 2);
 #endif
 				if (!rt5691->open_gender) {
-					schedule_delayed_work( &rt5691->mic_check_work,
+					schedule_delayed_work(&rt5691->mic_check_work,
 						msecs_to_jiffies(40));
 				}
 			} else {
@@ -3671,7 +3670,7 @@ static void rt5691_jack_detect_handler(struct work_struct *work)
 
 						msleep(200);
 						for (i = 0; i < 16; i++) {
-							if  (!rt5691_button_detect(rt5691->component))
+							if (!rt5691_button_detect(rt5691->component))
 								break;
 							msleep(50);
 						}
@@ -4419,12 +4418,12 @@ static int rt5691_i2c_probe(struct i2c_client *i2c,
 #ifdef CONFIG_DEBUG_FS
 		rt5691_debugfs_root = debugfs_create_dir("rt5691", NULL);
 		if (!rt5691_debugfs_root) {
-			dev_err(&i2c->dev,"Failed to create debugfs root\n");
+			dev_err(&i2c->dev, "Failed to create debugfs root\n");
 		} else {
-			debugfs_create_file("codec_reg", 0666,
+			debugfs_create_file("codec_reg", 0664,
 				rt5691_debugfs_root, rt5691,
 				&rt5691_codec_reg_fops);
-			debugfs_create_file("codec_reg_adb", 0666,
+			debugfs_create_file("codec_reg_adb", 0664,
 				rt5691_debugfs_root, rt5691,
 				&rt5691_codec_reg_adb_fops);
 		}
