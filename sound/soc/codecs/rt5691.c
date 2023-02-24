@@ -3924,6 +3924,15 @@ static void rt5691_mic_check_handler(struct work_struct *work)
 
 	rt5691->mic_check_break = false;
 
+	if (rt5691->is_suspend) {
+		dev_info(component->dev, "%s wait resume\n", __func__);
+		i = 0;
+		while (i < 10 && rt5691->is_suspend) {
+			msleep(50);
+			i++;
+		}
+	}
+
 	regmap_update_bits(rt5691->regmap, RT5691_PWR_DA_PATH_2, 0x80, 0x80);
 	snd_soc_dapm_force_enable_pin(dapm, "MICBIAS1");
 	snd_soc_dapm_sync(dapm);
