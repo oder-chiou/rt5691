@@ -3188,6 +3188,9 @@ static int rt5691_parse_dt(struct rt5691_priv *rt5691, struct device *dev)
 	if (i2c_retry)
 		rt5691->pdata.i2c_op_count = i2c_retry + 1;
 
+	of_property_read_u32(dev->of_node, "realtek,button-clk",
+		&rt5691->pdata.button_clk);
+
 	return 0;
 }
 
@@ -3197,7 +3200,8 @@ static void rt5691_enable_push_button_irq(struct snd_soc_component *component,
 	struct rt5691_priv *rt5691 = snd_soc_component_get_drvdata(component);
 
 	if (enable) {
-		snd_soc_component_write(component, RT5691_MIC_BTN_CTRL_16, 0xff);
+		snd_soc_component_write(component, RT5691_MIC_BTN_CTRL_16,
+			rt5691->pdata.button_clk);
 		snd_soc_component_write(component, RT5691_MIC_BTN_CTRL_17, 0x3);
 		snd_soc_component_update_bits(component,
 			RT5691_SAR_ADC_DET_CTRL_4, 0x8, 0x8);
